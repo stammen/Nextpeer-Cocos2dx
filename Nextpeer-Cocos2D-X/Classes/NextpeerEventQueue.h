@@ -6,7 +6,12 @@
 #ifndef __NextpeerEventQueue__
 #define __NextpeerEventQueue__
 
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+#include "CCPThreadWinRT.h"
+#else
 #include <pthread.h>
+#endif
+
 #include <deque>
 #include <string.h>
 using namespace std;
