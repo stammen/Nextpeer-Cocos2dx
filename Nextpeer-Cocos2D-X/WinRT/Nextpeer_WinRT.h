@@ -20,12 +20,17 @@
 
 #include "Export.h"
 #include "CCNextpeer.h"
+#include <cpprest/ws_client.h>
 
 namespace nextpeer {
     class Nextpeer_WinRT : public CCNextpeer
     {
     public:       
         
+        Nextpeer_WinRT()
+            : m_ws()
+        {}
+
         /** @name Open the dashboard */
        
         /**
@@ -155,7 +160,11 @@ namespace nextpeer {
 		static Nextpeer_WinRT* getInstance();
 		
 	private:
+        void pushData(void* pBuffer, uint32_t length);
+
 		static Nextpeer_WinRT* _sharedInstance;
+        web::websockets::client::websocket_callback_client m_ws;
+
     };
 
 };

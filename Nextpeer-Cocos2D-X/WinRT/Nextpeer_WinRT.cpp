@@ -7,10 +7,18 @@
 #include "Nextpeer_WinRT.h"
 #include "NextpeerNotifier.h"
 
-
+#include <memory>
+#include <string>
+#include <cpprest/rawptrstream.h>
+#include <cpprest/producerconsumerstream.h>
 
 using namespace std;
+using namespace web;
+using namespace web::websockets::client;
+using namespace Concurrency::streams;
 
+static std::wstring sUrl = L"ws://127.0.0.1:8080";
+//static std::wstring sUrl = L"ws://echo.websocket.org";
 
 // CCNextpeer
 namespace nextpeer
@@ -41,90 +49,65 @@ namespace nextpeer
 
 	const char *NextpeerClass = "com.nextpeer.android.NextpeerCocos2DX";
 
-	/*
-		Helper function for calling static functions on the main Nextpeer class
-	 */
-	static void callStaticVoidMethod(const char *name, const char *signature, ...)
-	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		cocos2d::JniMethodInfo methodInfo;
-
-		if ( cocos2d::JniHelper::getStaticMethodInfo( methodInfo,
-												NextpeerClass,
-				                                name,
-				                                signature) ) {
-			va_list args;
-			va_start(args, signature);
-			methodInfo.env->CallStaticVoidMethodV(methodInfo.classID, methodInfo.methodID, args);
-			va_end(args);
-		}
-#endif
-	}
-
-	static int callStaticIntMethod(const char *name, const char *signature, ...)
-	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		cocos2d::JniMethodInfo methodInfo;
-
-		jint ret = 0;
-
-		if ( cocos2d::JniHelper::getStaticMethodInfo( methodInfo,
-												NextpeerClass,
-				                                name,
-				                                signature) ) {
-			va_list args;
-			va_start(args, signature);
-			ret = methodInfo.env->CallStaticIntMethod(methodInfo.classID, methodInfo.methodID, args);
-			va_end(args);
-		}
-		return ret;
-#else
-		return 0;
-#endif
-	}
 
 
 	void Nextpeer_WinRT::initialize(const char* apiKey)
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		cocos2d::JniMethodInfo methodInfo;
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+        m_ws.connect(sUrl.c_str()).then([](Concurrency::task<void> t)
+        { /* We've finished connecting. */
 
-		if (cocos2d::JniHelper::getStaticMethodInfo(methodInfo, NextpeerClass, "initialize", "(Ljava/lang/String;)V")) {
-			jstring stringArg = methodInfo.env->NewStringUTF(apiKey);
-			methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, stringArg);
-			methodInfo.env->DeleteLocalRef(stringArg);
-		}
+            try
+            {
+                t.get();
+            }
+            catch (Platform::Exception^ ex)
+            {
+                Platform::String^ s = ex->ToString();
 
-        // This initializes the event queue and starts the scheduler
-        NextpeerNotifier::getInstance()->queueScheduler();
+            }
+
+          // This initializes the event queue and starts the scheduler
+            NextpeerNotifier::getInstance()->queueScheduler();       
+        });
+
+        // set receive handler
+        m_ws.set_message_handler([](websocket_incoming_message msg)
+        {
+            msg.extract_string().then([](std::string body) {
+                NextpeerNotifier::getInstance()->broadcastReceiveSynchronizedEvent(CCString::create(NEXTPEER_NOTIFICATION_RECEIVE_SYNCHRONIZED_EVENT));
+                std::string foo = body;
+            });
+        });
+
 #endif
 	}
 
 	void Nextpeer_WinRT::launchDashboard()
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		callStaticVoidMethod("launch", "()V");
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+        CCNotificationCenter::sharedNotificationCenter()->postNotification(NEXTPEER_NOTIFICATION_TOURNAMENT_STARTED, nullptr);
 #endif
  	}
 
 	void Nextpeer_WinRT::reportScoreForCurrentTournament(uint32_t score)
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		callStaticVoidMethod("reportScoreForCurrentTournament", "(I)V", score);
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+		//callStaticVoidMethod("reportScoreForCurrentTournament", "(I)V", score);
 #endif
 	}
 
 	void Nextpeer_WinRT::reportControlledTournamentOverWithScore(uint32_t score)
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		callStaticVoidMethod("reportControlledTournamentOverWithScore", "(I)V", score);
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+		//callStaticVoidMethod("reportControlledTournamentOverWithScore", "(I)V", score);
 #endif
 	}
 
 	void Nextpeer_WinRT::reportForfeitForCurrentTournament()
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		callStaticVoidMethod("reportForfeitForCurrentTournament", "()V");
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+		//callStaticVoidMethod("reportForfeitForCurrentTournament", "()V");
 #endif
 	}
 
@@ -135,196 +118,105 @@ namespace nextpeer
 
 	bool Nextpeer_WinRT::isCurrentlyInTournament()
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		cocos2d::JniMethodInfo methodInfo;
-		jboolean ret = 0;
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
 
-		if (cocos2d::JniHelper::getStaticMethodInfo(methodInfo, NextpeerClass, "isCurrentlyInTournament", "()Z")) {
-			ret = methodInfo.env->CallStaticBooleanMethod(methodInfo.classID, methodInfo.methodID);
-		}
-
-		return (bool)ret;
-#else
-		return false;
+		return true;
 #endif
 	}
 
 	std::string Nextpeer_WinRT::getCurrentPlayerId()
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		cocos2d::JniMethodInfo methodInfo;
-
-		if (cocos2d::JniHelper::getStaticMethodInfo(methodInfo, NextpeerClass, "getCurrentPlayerId", "()Ljava/lang/String;")) {
-			jstring id = (jstring)methodInfo.env->CallStaticObjectMethod(methodInfo.classID, methodInfo.methodID);
-			if (!id) return string("");
-
-			return cocos2d::JniHelper::jstring2string(id);
-		}
-		else {
-			return string("");
-		}
-#else
-		return string("");
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+        return string("");
 #endif
 	}
 
 	std::string Nextpeer_WinRT::getCurrentPlayerName()
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		cocos2d::JniMethodInfo methodInfo;
-
-		if (cocos2d::JniHelper::getStaticMethodInfo(methodInfo, NextpeerClass, "getCurrentPlayerName", "()Ljava/lang/String;")) {
-			jstring name = (jstring)methodInfo.env->CallStaticObjectMethod(methodInfo.classID, methodInfo.methodID);
-			if (!name) return string("");
-
-			return cocos2d::JniHelper::jstring2string(name);
-		}
-#endif
         return string("");
 	}
 
 	void Nextpeer_WinRT::unreliablePushDataToOtherPlayers(void* pBuffer, uint32_t length)
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		if (length == 0) return;
-
-		cocos2d::JniMethodInfo methodInfo;
-
-		if (cocos2d::JniHelper::getStaticMethodInfo(methodInfo, NextpeerClass, "unreliablePushDataToOtherPlayers", "([B)V")) {
-			jbyteArray javaArray = methodInfo.env->NewByteArray(length);
-			methodInfo.env->SetByteArrayRegion(javaArray, 0, length, (const jbyte*)pBuffer);
-
-			methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, javaArray);
-
-			methodInfo.env->DeleteLocalRef(javaArray);
-		}
-#endif
+        if (length > 0)
+        {
+            pushData(pBuffer, length);
+        }
 	}
 
 	void Nextpeer_WinRT::pushDataToOtherPlayers(void* pBuffer, uint32_t length)
 	{
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-		if (length == 0) return;
-
-		cocos2d::JniMethodInfo methodInfo;
-
-		if (cocos2d::JniHelper::getStaticMethodInfo(methodInfo, NextpeerClass, "pushDataToOtherPlayers", "([B)V")) {
-			jbyteArray javaArray = methodInfo.env->NewByteArray(length);
-			methodInfo.env->SetByteArrayRegion(javaArray, 0, length, (const jbyte*)pBuffer);
-
-			methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, javaArray);
-
-			methodInfo.env->DeleteLocalRef(javaArray);
-		}
-#endif
+        if (length > 0)
+        {
+            pushData(pBuffer, length);
+        }
 	}
 
+    void Nextpeer_WinRT::pushData(void* pBuffer, uint32_t length)
+    {
+        concurrency::streams::producer_consumer_buffer<uint8_t> pcbuf;
+
+        auto send_task = pcbuf.putn_nocopy((uint8_t*)pBuffer, length).then([&](size_t length) {
+            websocket_outgoing_message wom;
+            wom.set_binary_message(pcbuf.create_istream(), length);
+            return m_ws.send(wom);
+        }).then([](pplx::task<void> t)
+        {
+            try
+            {
+                t.get();
+            }
+            catch (const websocket_exception& ex)
+            {
+                std::cout << ex.what();
+            }
+        });
+        send_task.wait();
+    }
+
+
     void Nextpeer_WinRT::enableRankingDisplay(bool enableRankingDisplay) {
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-        callStaticVoidMethod("enableRankingDisplay", "(Z)V", enableRankingDisplay);
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+        //callStaticVoidMethod("enableRankingDisplay", "(Z)V", enableRankingDisplay);
 #endif
     }
+    
     void Nextpeer_WinRT::reportScoreModifierForRecording(const char* recordingPlayerId, int32_t modifier)
     {
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-        JNIEnv* env = NULL;
-        if (!Nextpeer_WinRTJNIHelper::getEnv(&env)) return;
 
-        jstring playerId = (jstring)env->NewStringUTF(recordingPlayerId);
-        jint jModifier = (jint)(modifier > INT_MAX ? INT_MAX : modifier);
-
-        callStaticVoidMethod("requestRecordingControlScoreModifier", "(Ljava/lang/String;I)V", playerId, jModifier);
-
-        env->DeleteLocalRef(playerId);
-#endif
     }
 
     void Nextpeer_WinRT::requestPauseRecording(const char* recordingPlayerId)
     {
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-        JNIEnv* env = NULL;
-        if (!Nextpeer_WinRTJNIHelper::getEnv(&env)) return;
 
-        jstring playerId = (jstring)env->NewStringUTF(recordingPlayerId);
-
-        callStaticVoidMethod("requestRecordingControlPauseRecording", "(Ljava/lang/String;)V", playerId);
-
-        env->DeleteLocalRef(playerId);
-#endif
     }
 
     void Nextpeer_WinRT::requestResumeRecording(const char* recordingPlayerId)
     {
 
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-        JNIEnv* env = NULL;
-        if (!Nextpeer_WinRTJNIHelper::getEnv(&env)) return;
-
-        jstring playerId = (jstring)env->NewStringUTF(recordingPlayerId);
-
-        callStaticVoidMethod("requestRecordingControlResumeRecording", "(Ljava/lang/String;)V", playerId);
-
-        env->DeleteLocalRef(playerId);
-#endif
     }
 
     void Nextpeer_WinRT::requestStopRecording(const char* recordingPlayerId)
     {
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-        JNIEnv* env = NULL;
-        if (!Nextpeer_WinRTJNIHelper::getEnv(&env)) return;
 
-        jstring playerId = (jstring)env->NewStringUTF(recordingPlayerId);
-
-        callStaticVoidMethod("requestRecordingControlStopRecording", "(Ljava/lang/String;)V", playerId);
-
-        env->DeleteLocalRef(playerId);
-#endif
 
     }
 
     void Nextpeer_WinRT::requestRewindRecording(const char* recordingPlayerId, uint32_t timeDelta)
     {
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-        JNIEnv* env = NULL;
-        if (!Nextpeer_WinRTJNIHelper::getEnv(&env)) return;
 
-        jstring playerId = (jstring)env->NewStringUTF(recordingPlayerId);
-        jint delta = (jint)(timeDelta > INT_MAX ? INT_MAX : timeDelta);
-
-        callStaticVoidMethod("requestRecordingControlRewindRecording", "(Ljava/lang/String;I)V", playerId, timeDelta);
-
-        env->DeleteLocalRef(playerId);
-#endif
 
     }
 
     void Nextpeer_WinRT::requestFastForwardRecording(const char* recordingPlayerId, uint32_t timeDelta)
     {
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-        JNIEnv* env = NULL;
-        if (!Nextpeer_WinRTJNIHelper::getEnv(&env)) return;
 
-        jstring playerId = (jstring)env->NewStringUTF(recordingPlayerId);
-        jint delta = (jint)(timeDelta > INT_MAX ? INT_MAX : timeDelta);
-
-        callStaticVoidMethod("requestRecordingControlFastForwardRecording", "(Ljava/lang/String;I)V", playerId, timeDelta);
-
-        env->DeleteLocalRef(playerId);
-#endif
     }
-        void Nextpeer_WinRT::registerToSynchronizedEvent(const char* eventName, uint32_t timeout)
-        {
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-            JNIEnv* env = NULL;
-            if (!Nextpeer_WinRTJNIHelper::getEnv(&env)) return;
-
-            jstring event = (jstring)env->NewStringUTF(eventName);
-            jint syncTimeout = (jint)(timeout > INT_MAX ? INT_MAX : timeout);
-
-            callStaticVoidMethod("registerToSynchronizedEvent", "(Ljava/lang/String;I)V", event, syncTimeout);
-
-            env->DeleteLocalRef(event);
+    void Nextpeer_WinRT::registerToSynchronizedEvent(const char* eventName, uint32_t timeout)
+    {
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+        int syncTimeout = (int)(timeout > INT_MAX ? INT_MAX : timeout);
+        //callStaticVoidMethod("registerToSynchronizedEvent", "(Ljava/lang/String;I)V", event, syncTimeout);
 #endif
     }
 } // namespace nextpeer
