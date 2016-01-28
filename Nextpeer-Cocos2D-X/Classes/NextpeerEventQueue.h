@@ -22,7 +22,7 @@ USING_NS_CC;
 // On Android we queue the events and let the main loop scheduler pull them.
 // This way we can communicate with the main thread of the game engine.
 // Note that this is not needed on iOS.
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
 #   define USE_EVENT_QUEUE
 #endif
 
