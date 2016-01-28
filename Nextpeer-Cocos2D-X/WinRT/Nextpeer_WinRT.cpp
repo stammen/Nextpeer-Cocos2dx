@@ -17,6 +17,7 @@ using namespace web;
 using namespace web::websockets::client;
 using namespace Concurrency::streams;
 
+//static std::wstring sUrl = L"ws://uforun2.azurewebsites.net:8080";
 static std::wstring sUrl = L"ws://127.0.0.1:8080";
 //static std::wstring sUrl = L"ws://echo.websocket.org";
 
@@ -94,6 +95,7 @@ namespace nextpeer
 	{
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
 		//callStaticVoidMethod("reportScoreForCurrentTournament", "(I)V", score);
+        return;
 #endif
 	}
 
