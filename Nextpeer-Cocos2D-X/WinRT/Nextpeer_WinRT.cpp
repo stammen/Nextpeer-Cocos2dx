@@ -17,8 +17,9 @@ using namespace web;
 using namespace web::websockets::client;
 using namespace Concurrency::streams;
 
-//static std::wstring sUrl = L"ws://uforun2.azurewebsites.net:8080";
-static std::wstring sUrl = L"ws://127.0.0.1:8080";
+//static std::wstring sUrl = L"ws://uforun2.azurewebsites.net";
+//static std::wstring sUrl = L"ws://127.0.0.1:3000";
+static std::wstring sUrl = L"ws://104.40.25.209:3000";
 //static std::wstring sUrl = L"ws://echo.websocket.org";
 
 // CCNextpeer
